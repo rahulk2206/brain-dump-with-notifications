@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Brain Dump">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Brain Dump - Your Productivity Companion</title>
+  <link rel="manifest" href="manifest.json">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Inter:wght@400;500;600;700&display=swap">
+  
+  <style>
+    * {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .heading-font {
+      font-family: 'Playfair Display', serif;
+    }
+    
+    .item-enter {
+      animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    
+    .pulse-glow {
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { 
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 1;
+        transform: scale(1.05);
+      }
+    }
+    
+    .float {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* Infinity symbol (∞) – float + subtle pulse */
+    .infinity-float {
+      animation: float 6s ease-in-out infinite;
+    }
+    .infinity-symbol {
+      font-size: 4.25rem;
+      line-height: 1;
+      font-weight: 300;
+      animation: infinity-pulse 3s ease-in-out infinite;
+    }
+    @keyframes infinity-pulse {
+      0%, 100% { opacity: 0.85; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.08); }
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+    
+    .glass {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    }
+    
+    .dark .glass {
+      background: rgba(30, 41, 59, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(71, 85, 105, 0.35);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    }
+    
+    .stat-card {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    }
+    
+    .dark .stat-card:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Safe area for iPhone notch and home indicator */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #root {
+      min-height: 100%;
+    }
+    /* Buttons: pointer cursor and let button receive hover (Safari fix) */
+    button {
+      cursor: pointer;
+    }
+    button *,
+    button svg {
+      cursor: pointer;
+      pointer-events: none;
+    }
+    /* Primary touch targets (44px) - add class .touch-target to key buttons */
+    button.touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    /* Focus visible for keyboard/screen reader */
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid rgba(245, 158, 11, 0.8);
+      outline-offset: 2px;
+    }
+    /* Text selection */
+    ::selection {
+      background: rgba(245, 158, 11, 0.25);
+    }
+    .dark ::selection {
+      background: rgba(245, 158, 11, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Lucide icons as SVG components
+    const Icon = ({ d, ...props }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        {Array.isArray(d) ? d.map((path, i) => <path key={i} d={path} />) : <path d={d} />}
+      </svg>
+    );
+
+    const Search = (props) => <Icon d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" {...props} />;
+    const Lightbulb = (props) => <Icon d={["M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5", "M9 18h6", "M10 22h4"]} {...props} />;
+    const CheckSquare = (props) => <Icon d={["M9 11l3 3L22 4", "M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"]} {...props} />;
+    const FileText = (props) => <Icon d={["M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z", "M14 2v6h6", "M16 13H8", "M16 17H8", "M10 9H8"]} {...props} />;
+    const Trash2 = (props) => <Icon d={["M3 6h18", "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", "M10 11v6", "M14 11v6"]} {...props} />;
+    const Check = (props) => <Icon d="M20 6L9 17l-5-5" {...props} />;
+    const Moon = (props) => <Icon d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" {...props} />;
+    const Sun = (props) => <Icon d={["M12 3v1M12 21v-1M4.22 4.22l.707.707M18.36 18.36l.707.707M1 12h1M21 12h1M4.22 19.78l.707-.707M18.36 5.64l.707-.707", "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z"]} {...props} />;
+    const Download = (props) => <Icon d={["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"]} {...props} />;
+    const Archive = (props) => <Icon d={["M21 8v13H3V8", "M1 3h22v5H1z", "M10 12h4"]} {...props} />;
+    const Sparkles = (props) => <Icon d={["M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z", "M20 3v4", "M22 5h-4", "M4 17v2", "M5 18H3"]} {...props} />;
+    const Users = (props) => <Icon d={["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M23 21v-2a4 4 0 0 0-3-3.87", "M16 3.13a4 4 0 0 1 0 7.75", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"]} {...props} />;
+    const Calendar = (props) => <Icon d={["M8 2v4", "M16 2v4", "M3 10h18", "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"]} {...props} />;
+    const Tag = (props) => <Icon d={["M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z", "M7 7h.01"]} {...props} />;
+    const X = (props) => <Icon d={["M18 6L6 18", "M6 6l12 12"]} {...props} />;
+    const ChevronLeft = (props) => <Icon d="M15 18l-6-6 6-6" {...props} />;
+    const ChevronRight = (props) => <Icon d="M9 18l6-6-6-6" {...props} />;
+    const Grid3x3 = (props) => <Icon d={["M3 3h7v7H3z", "M14 3h7v7h-7z", "M14 14h7v7h-7z", "M3 14h7v7H3z"]} {...props} />;
+    const Bell = (props) => <Icon d={["M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9", "M13.73 21a2 2 0 0 1-3.46 0"]} {...props} />;
+
+    function BrainDumpApp() {
+      const [input, setInput] = useState('');
+      const [items, setItems] = useState([]);
+      const [filter, setFilter] = useState('all');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [isLoading, setIsLoading] = useState(true);
+      const [activeCategory, setActiveCategory] = useState(null);
+      const [darkMode, setDarkMode] = useState(() => {
+        try {
+          const p = localStorage.getItem('brain-dump-preferences');
+          return p ? JSON.parse(p).darkMode : false;
+        } catch { return false; }
+      });
+      const [showArchived, setShowArchived] = useState(false);
+      const [tagInput, setTagInput] = useState('');
+      const [selectedTags, setSelectedTags] = useState([]);
+      const [collaborationMode, setCollaborationMode] = useState(() => {
+        try {
+          const p = localStorage.getItem('brain-dump-preferences');
+          return p ? JSON.parse(p).collaborationMode : false;
+        } catch { return false; }
+      });
+      const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+      const [notificationPermission, setNotificationPermission] = useState(() => typeof Notification !== 'undefined' ? Notification.permission : 'default');
+      const [viewMode, setViewMode] = useState('list');
+      const [selectedDate, setSelectedDate] = useState(null);
+      const [showDatePicker, setShowDatePicker] = useState(false);
+      const [currentMonth, setCurrentMonth] = useState(new Date());
+      const [mainSuggestions, setMainSuggestions] = useState([]);
+      const [tagSuggestions, setTagSuggestions] = useState([]);
+      const [showMainSuggestions, setShowMainSuggestions] = useState(false);
+      const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+      const [mainSuggestionIndex, setMainSuggestionIndex] = useState(-1);
+      const [tagSuggestionIndex, setTagSuggestionIndex] = useState(-1);
+      const [cursorPos, setCursorPos] = useState(0);
+      const textareaRef = React.useRef(null);
+      const dueTodayNotifiedRef = React.useRef(false);
+      const [backendReady, setBackendReady] = useState(false);
+      const vapidPublicKeyRef = React.useRef(null);
+      const API_BASE = (typeof window !== 'undefined' && window.BRAIN_DUMP_API_URL) || '';
+      const getUserId = () => {
+        try {
+          let id = localStorage.getItem('brain-dump-user-id');
+          if (!id) {
+            id = 'bd-' + (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2));
+            localStorage.setItem('brain-dump-user-id', id);
+          }
+          return id;
+        } catch (_) { return 'bd-local'; }
+      };
+
+      // Load from localStorage
+      useEffect(() => {
+        const storedItems = localStorage.getItem('brain-dump-items');
+        const storedPrefs = localStorage.getItem('brain-dump-preferences');
+        
+        if (storedItems) {
+          try {
+            setItems(JSON.parse(storedItems));
+          } catch (e) {
+            console.error('Error loading items:', e);
+          }
+        }
+        
+        if (storedPrefs) {
+          try {
+            const prefs = JSON.parse(storedPrefs);
+            setDarkMode(prefs.darkMode || false);
+            setCollaborationMode(prefs.collaborationMode || false);
+            setNotificationsEnabled(!!prefs.notificationsEnabled);
+          } catch (e) {
+            console.error('Error loading preferences:', e);
+          }
+        }
+        if (typeof Notification !== 'undefined') setNotificationPermission(Notification.permission);
+        setIsLoading(false);
+      }, []);
+
+      // Fetch backend config (VAPID key) so we can send push when backend is available
+      useEffect(() => {
+        if (!API_BASE && typeof window !== 'undefined' && window.location.protocol === 'file:') return;
+        const url = (API_BASE || window.location.origin) + '/api/config';
+        fetch(url).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+          if (data && data.vapidPublicKey) {
+            vapidPublicKeyRef.current = data.vapidPublicKey;
+            setBackendReady(true);
+          }
+        }).catch(() => {});
+      }, [API_BASE]);
+
+      // Register service worker and show "due today" when permission granted
+      useEffect(() => {
+        if (typeof navigator === 'undefined' || !navigator.serviceWorker) return;
+        navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+      }, []);
+      // When backend is ready and notifications already enabled, re-register push subscription
+      useEffect(() => {
+        if (!backendReady || !notificationsEnabled || notificationPermission !== 'granted' || !vapidPublicKeyRef.current) return;
+        let cancelled = false;
+        (async () => {
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: vapidPublicKeyRef.current
+            });
+            if (cancelled) return;
+            const url = (API_BASE || window.location.origin) + '/api/subscribe';
+            await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: getUserId(), subscription: sub.toJSON() })
+            });
+          } catch (_) {}
+        })();
+        return () => { cancelled = true; };
+      }, [backendReady, notificationsEnabled, notificationPermission]);
+      useEffect(() => {
+        if (notificationPermission !== 'granted' || !notificationsEnabled || !items.length || dueTodayNotifiedRef.current) return;
+        const today = new Date().toISOString().split('T')[0];
+        const dueToday = items.filter(i => !i.completed && !i.archived && i.dueDate === today);
+        if (dueToday.length === 0) return;
+        dueTodayNotifiedRef.current = true;
+        const title = dueToday.length === 1 ? 'Task due today' : dueToday.length + ' tasks due today';
+        const body = dueToday.length === 1 ? (dueToday[0].text.slice(0, 60) + (dueToday[0].text.length > 60 ? '…' : '')) : 'Open Brain Dump to see them.';
+        try { new Notification(title, { body, icon: 'icon-192.png', tag: 'braindump-due' }); } catch (_) {}
+      }, [notificationPermission, notificationsEnabled, items]);
+
+      // Save to localStorage
+      const saveItems = (newItems) => {
+        localStorage.setItem('brain-dump-items', JSON.stringify(newItems));
+      };
+
+      const savePreferences = (prefs) => {
+        localStorage.setItem('brain-dump-preferences', JSON.stringify(prefs));
+      };
+
+      const toggleDarkMode = () => {
+        const newMode = !darkMode;
+        setDarkMode(newMode);
+        savePreferences({ darkMode: newMode, collaborationMode, notificationsEnabled });
+      };
+
+      const toggleCollaborationMode = () => {
+        const newMode = !collaborationMode;
+        setCollaborationMode(newMode);
+        savePreferences({ darkMode, collaborationMode: newMode, notificationsEnabled });
+      };
+
+      const enableNotifications = async () => {
+        if (typeof Notification === 'undefined') return;
+        if (Notification.permission === 'granted') {
+          setNotificationPermission('granted');
+          setNotificationsEnabled(true);
+          savePreferences({ darkMode, collaborationMode, notificationsEnabled: true });
+          if (backendReady && vapidPublicKeyRef.current && navigator.serviceWorker && navigator.serviceWorker.ready) {
+            try {
+              const reg = await navigator.serviceWorker.ready;
+              const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: vapidPublicKeyRef.current
+              });
+              const url = (API_BASE || window.location.origin) + '/api/subscribe';
+              await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: getUserId(), subscription: sub.toJSON() })
+              });
+            } catch (_) {}
+          }
+          return;
+        }
+        if (Notification.permission === 'denied') {
+          setNotificationPermission('denied');
+          return;
+        }
+        const perm = await Notification.requestPermission();
+        setNotificationPermission(perm);
+        const enabled = perm === 'granted';
+        setNotificationsEnabled(enabled);
+        savePreferences({ darkMode, collaborationMode, notificationsEnabled: enabled });
+        if (enabled && backendReady && vapidPublicKeyRef.current && navigator.serviceWorker && navigator.serviceWorker.ready) {
+          try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: vapidPublicKeyRef.current
+            });
+            const url = (API_BASE || window.location.origin) + '/api/subscribe';
+            await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: getUserId(), subscription: sub.toJSON() })
+            });
+          } catch (_) {}
+        }
+      };
+
+      const disableNotifications = () => {
+        setNotificationsEnabled(false);
+        savePreferences({ darkMode, collaborationMode, notificationsEnabled: false });
+      };
+
+      const addItem = (category = 'note', priority = 'normal') => {
+        if (!input.trim()) return;
+
+        const newItem = {
+          id: Date.now(),
+          text: input.trim(),
+          category: category,
+          priority: priority,
+          timestamp: new Date().toISOString(),
+          dueDate: selectedDate ? (typeof selectedDate === 'string' ? selectedDate : new Date(selectedDate).toISOString().split('T')[0]) : null,
+          tags: tagInput.trim() ? tagInput.split(',').map(t => t.trim()).filter(t => t) : [],
+          completed: false,
+          archived: false,
+          createdBy: collaborationMode ? 'User' : 'You'
+        };
+
+        const updatedItems = [newItem, ...items];
+        setItems(updatedItems);
+        saveItems(updatedItems);
+        setInput('');
+        setTagInput('');
+        setSelectedDate(null);
+        setShowDatePicker(false);
+        setActiveCategory(null);
+        if (newItem.dueDate && notificationsEnabled && backendReady) {
+          const at = new Date(newItem.dueDate + 'T09:00:00').toISOString();
+          const url = (API_BASE || window.location.origin) + '/api/schedule';
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: getUserId(),
+              at,
+              title: 'Task due today',
+              body: newItem.text.slice(0, 80) + (newItem.text.length > 80 ? '…' : ''),
+              itemId: newItem.id
+            })
+          }).catch(() => {});
+        }
+      };
+
+      const toggleComplete = (id) => {
+        const item = items.find(i => i.id === id);
+        const updatedItems = items.map(i =>
+          i.id === id ? { ...i, completed: !i.completed } : i
+        );
+        setItems(updatedItems);
+        saveItems(updatedItems);
+        if (item && item.dueDate && backendReady) {
+          const url = (API_BASE || window.location.origin) + '/api/unschedule';
+          fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: getUserId(), itemId: id }) }).catch(() => {});
+        }
+      };
+
+      const toggleArchive = (id) => {
+        const updatedItems = items.map(item =>
+          item.id === id ? { ...item, archived: !item.archived } : item
+        );
+        setItems(updatedItems);
+        saveItems(updatedItems);
+      };
+
+      const setPriority = (id, priority) => {
+        const updatedItems = items.map(item =>
+          item.id === id ? { ...item, priority } : item
+        );
+        setItems(updatedItems);
+        saveItems(updatedItems);
+      };
+
+      const deleteItem = (id) => {
+        const item = items.find(i => i.id === id);
+        const updatedItems = items.filter(item => item.id !== id);
+        setItems(updatedItems);
+        saveItems(updatedItems);
+        if (item && item.dueDate && backendReady) {
+          const url = (API_BASE || window.location.origin) + '/api/unschedule';
+          fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: getUserId(), itemId: id }) }).catch(() => {});
+        }
+      };
+
+      const removeTagFromItem = (id, tag) => {
+        const updatedItems = items.map(item => {
+          if (item.id === id) {
+            const tags = item.tags || [];
+            return { ...item, tags: tags.filter(t => t !== tag) };
+          }
+          return item;
+        });
+        setItems(updatedItems);
+        saveItems(updatedItems);
+      };
+
+      const getAllTags = () => {
+        const tagSet = new Set();
+        items.forEach(item => {
+          if (item.tags) {
+            item.tags.forEach(tag => tagSet.add(tag));
+          }
+        });
+        return Array.from(tagSet);
+      };
+
+      // Unique words from all items (for text suggestions)
+      const getWordsFromItems = () => {
+        const wordSet = new Set();
+        items.forEach(item => {
+          const words = (item.text || '').match(/\b[a-zA-Z]{2,}\b/g);
+          if (words) words.forEach(w => wordSet.add(w.toLowerCase()));
+        });
+        return Array.from(wordSet);
+      };
+
+      // Update main text suggestions based on current word at cursor
+      const updateMainSuggestions = (text, cursorPos) => {
+        const beforeCursor = text.slice(0, cursorPos);
+        const match = beforeCursor.match(/\b([a-zA-Z]*)$/);
+        const prefix = match ? match[1].toLowerCase() : '';
+        if (prefix.length < 2) {
+          setShowMainSuggestions(false);
+          setMainSuggestions([]);
+          setMainSuggestionIndex(-1);
+          return;
+        }
+        const words = getWordsFromItems();
+        const suggestions = words.filter(w => w.startsWith(prefix) && w !== prefix).slice(0, 6);
+        setMainSuggestions(suggestions);
+        setShowMainSuggestions(suggestions.length > 0);
+        setMainSuggestionIndex(-1);
+      };
+
+      // Update tag suggestions based on current tag being typed
+      const updateTagSuggestions = (tagText) => {
+        const currentPart = tagText.split(',').map(t => t.trim()).pop() || '';
+        if (currentPart.length < 1) {
+          setShowTagSuggestions(false);
+          setTagSuggestions([]);
+          setTagSuggestionIndex(-1);
+          return;
+        }
+        const allTags = getAllTags();
+        const prefix = currentPart.toLowerCase();
+        const suggestions = allTags.filter(t => t.toLowerCase().startsWith(prefix) && t.toLowerCase() !== prefix).slice(0, 8);
+        setTagSuggestions(suggestions);
+        setShowTagSuggestions(suggestions.length > 0);
+        setTagSuggestionIndex(-1);
+      };
+
+      const applyMainSuggestion = (word) => {
+        const el = textareaRef.current;
+        if (!el || !word) return;
+        const start = el.selectionStart;
+        const text = input;
+        const beforeCursor = text.slice(0, start);
+        const match = beforeCursor.match(/\b([a-zA-Z]*)$/);
+        const prefix = match ? match[1] : '';
+        const newText = text.slice(0, start - prefix.length) + word + text.slice(start);
+        setInput(newText);
+        setShowMainSuggestions(false);
+        setMainSuggestions([]);
+        setMainSuggestionIndex(-1);
+        setTimeout(() => {
+          el.focus();
+          el.setSelectionRange(start - prefix.length + word.length, start - prefix.length + word.length);
+        }, 0);
+      };
+
+      const applyTagSuggestion = (tag) => {
+        const parts = tagInput.split(',').map(t => t.trim());
+        parts.pop(); // remove current partial tag
+        const newParts = [...parts.filter(Boolean), tag];
+        setTagInput(newParts.join(', '));
+        setShowTagSuggestions(false);
+        setTagSuggestions([]);
+        setTagSuggestionIndex(-1);
+      };
+
+      const exportData = () => {
+        const dataStr = JSON.stringify(items, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `brain-dump-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const filteredItems = items.filter(item => {
+        const matchesFilter = filter === 'all' || item.category === filter;
+        const matchesSearch = item.text.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesArchive = showArchived ? item.archived : !item.archived;
+        const matchesTags = selectedTags.length === 0 || (item.tags && selectedTags.every(tag => item.tags.includes(tag)));
+        return matchesFilter && matchesSearch && matchesArchive && matchesTags;
+      });
+
+      const categoryConfig = {
+        idea: { icon: Lightbulb, color: 'bg-gradient-to-br from-amber-400 to-orange-500', label: 'Idea', hoverColor: 'hover:from-amber-500 hover:to-orange-600' },
+        task: { icon: CheckSquare, color: 'bg-gradient-to-br from-emerald-400 to-teal-500', label: 'Task', hoverColor: 'hover:from-emerald-500 hover:to-teal-600' },
+        note: { icon: FileText, color: 'bg-gradient-to-br from-blue-400 to-indigo-500', label: 'Note', hoverColor: 'hover:from-blue-500 hover:to-indigo-600' },
+        goal: { 
+                icon: Sparkles, 
+                color: 'bg-gradient-to-br from-pink-400 to-purple-500', 
+                label: 'Goal', 
+                hoverColor: 'hover:from-pink-500 hover:to-purple-600',
+            },
+      };
+
+      const priorityConfig = {
+        high: { label: 'High', color: 'text-red-500', bg: 'bg-red-50 dark:bg-red-900/20' },
+        normal: { label: 'Normal', color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-800/50' },
+        low: { label: 'Low', color: 'text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800/30' }
+      };
+
+      const stats = {
+        ideas: items.filter(i => i.category === 'idea' && !i.archived).length,
+        tasks: items.filter(i => i.category === 'task' && !i.completed && !i.archived).length,
+        notes: items.filter(i => i.category === 'note' && !i.archived).length,
+        goals: items.filter(i => i.category === 'goal' && !i.archived).length,
+        completed: items.filter(i => i.completed && !i.archived).length,
+        archived: items.filter(i => i.archived).length
+      };
+
+      // Calendar helpers
+      const getDaysInMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = firstDay.getDay();
+        
+        return { daysInMonth, startingDayOfWeek, year, month };
+      };
+
+      const toLocalDateString = (d) => {
+        const x = new Date(d);
+        const y = x.getFullYear();
+        const m = String(x.getMonth() + 1).padStart(2, '0');
+        const day = String(x.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
+
+      const getItemsForDate = (date) => {
+        const dateStr = toLocalDateString(date);
+        return items.filter(item => {
+          if (item.archived) return false;
+          const itemDate = item.dueDate || item.timestamp;
+          const itemStr = item.dueDate && item.dueDate.length >= 10 ? item.dueDate.slice(0, 10) : (itemDate ? toLocalDateString(new Date(itemDate)) : null);
+          return itemStr === dateStr;
+        });
+      };
+
+      const formatDateForInput = (date) => {
+        if (!date) return '';
+        return date.toISOString().split('T')[0];
+      };
+
+      const getTimeAgo = (timestamp) => {
+        const now = new Date();
+        const then = new Date(timestamp);
+        const seconds = Math.floor((now - then) / 1000);
+        
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+        return then.toLocaleDateString();
+      };
+
+      if (isLoading) {
+        return (
+          <div className={`min-h-screen ${darkMode ? 'dark bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-amber-50/30 to-orange-50'} flex items-center justify-center transition-colors duration-500`}>
+            <div className="text-center">
+              <div className="animate-spin w-16 h-16 border-4 border-amber-200 border-t-amber-500 rounded-full mx-auto mb-4"></div>
+              <div className={`text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Loading your thoughts...</div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'dark bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-amber-50/30 to-orange-50'} p-4 md:p-8`}>
+          <div className="max-w-5xl mx-auto">
+            {/* Header - stacked on small screens to avoid overlap */}
+            <div className="mb-8 text-center relative pt-2">
+              <div className="relative z-10 flex flex-wrap items-center justify-center gap-2 mb-4 sm:mb-0 sm:absolute sm:left-0 sm:top-0 sm:justify-start">
+                <button
+                  type="button"
+                  onClick={toggleCollaborationMode}
+                  style={{ cursor: 'pointer' }}
+                  className={`touch-target cursor-pointer flex items-center gap-2 px-4 py-3 rounded-2xl glass hover:scale-105 active:scale-95 transition-all duration-300 group ${
+                    collaborationMode ? 'ring-2 ring-purple-400' : ''
+                  }`}
+                  title={collaborationMode ? 'Collaboration ON - shared with team' : 'Collaboration OFF - private mode'}
+                  aria-pressed={collaborationMode}
+                >
+                  <Users className={`w-5 h-5 shrink-0 ${collaborationMode ? 'text-purple-500' : darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                  {collaborationMode && (
+                    <span className={`text-sm font-semibold hidden sm:inline ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                      Team Mode
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
+                  style={{ cursor: 'pointer' }}
+                  className="touch-target cursor-pointer flex items-center justify-center gap-2 px-4 py-3 rounded-2xl glass hover:scale-105 active:scale-95 transition-all duration-300"
+                  title={`Switch to ${viewMode === 'list' ? 'calendar' : 'list'} view`}
+                  aria-label={viewMode === 'list' ? 'Switch to calendar view' : 'Switch to list view'}
+                >
+                  {viewMode === 'list' ? (
+                    <Calendar className={`w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                  ) : (
+                    <Grid3x3 className={`w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                  )}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={toggleDarkMode}
+                style={{ cursor: 'pointer' }}
+                className="touch-target cursor-pointer fixed z-20 top-2 right-2 sm:top-4 sm:right-4 p-3 rounded-2xl glass hover:scale-110 active:scale-95 transition-transform duration-300 group shadow-lg"
+                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {darkMode ? (
+                  <Sun className="w-6 h-6 text-amber-400 group-hover:rotate-180 transition-transform duration-500" />
+                ) : (
+                  <Moon className="w-6 h-6 text-slate-600 group-hover:-rotate-12 transition-transform duration-300" />
+                )}
+              </button>
+              <div className="relative z-0 infinity-float pt-4 sm:pt-0 flex justify-center mb-3">
+                <span className="infinity-symbol gradient-text" aria-hidden>∞</span>
+              </div>
+              <h1 className="relative z-0 heading-font text-5xl sm:text-6xl md:text-7xl font-black mb-3 tracking-tight">
+                <span className="gradient-text">Brain Dump</span>
+              </h1>
+              <p className={`text-base sm:text-lg ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                Your thoughts, beautifully organized
+                {collaborationMode && <span className="ml-2" aria-hidden>🤝</span>}
+              </p>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-8">
+              <div className="stat-card glass rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="w-5 h-5 text-amber-500" />
+                  <span className={`text-sm font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Ideas</span>
+                </div>
+                <div className={`heading-font text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {stats.ideas}
+                </div>
+              </div>
+              
+              <div className="stat-card glass rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckSquare className="w-5 h-5 text-emerald-500" />
+                  <span className={`text-sm font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Tasks</span>
+                </div>
+                <div className={`heading-font text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {stats.tasks}
+                </div>
+              </div>
+              
+              <div className="stat-card glass rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-5 h-5 text-blue-500" />
+                  <span className={`text-sm font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Notes</span>
+                </div>
+                <div className={`heading-font text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {stats.notes}
+                </div>
+              </div>
+              
+              <div className="stat-card glass rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-pink-500" />
+                  <span className={`text-sm font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Goals</span>
+                </div>
+                <div className={`heading-font text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {stats.goals}
+                </div>
+              </div>
+              
+              <div className="stat-card glass rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Check className="w-5 h-5 text-green-500" />
+                  <span className={`text-sm font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Done</span>
+                </div>
+                <div className={`heading-font text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {stats.completed}
+                </div>
+              </div>
+              
+              <div className="stat-card glass rounded-2xl p-4 shadow-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Archive className="w-5 h-5 text-slate-500" />
+                  <span className={`text-sm font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>Archived</span>
+                </div>
+                <div className={`heading-font text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                  {stats.archived}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Capture Input */}
+            <div className={`glass rounded-3xl shadow-2xl p-6 mb-8 border-2 ${darkMode ? 'border-slate-700' : 'border-white/50'}`}>
+              <div className="mb-5 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  spellCheck={true}
+                  autoComplete="off"
+                  autoCorrect="on"
+                  autoCapitalize="sentences"
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    setCursorPos(e.target.selectionStart);
+                    updateMainSuggestions(e.target.value, e.target.selectionStart);
+                  }}
+                  onSelect={(e) => {
+                    setCursorPos(e.target.selectionStart);
+                    updateMainSuggestions(input, e.target.selectionStart);
+                  }}
+                  onBlur={() => setTimeout(() => setShowMainSuggestions(false), 180)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && e.ctrlKey) {
+                      addItem(activeCategory || 'note');
+                      return;
+                    }
+                    if (showMainSuggestions && mainSuggestions.length > 0) {
+                      if (e.key === 'Tab' || (e.key === 'Enter' && mainSuggestionIndex >= 0)) {
+                        e.preventDefault();
+                        applyMainSuggestion(mainSuggestions[mainSuggestionIndex >= 0 ? mainSuggestionIndex : 0]);
+                        return;
+                      }
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setMainSuggestionIndex(i => (i < mainSuggestions.length - 1 ? i + 1 : 0));
+                        return;
+                      }
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        setMainSuggestionIndex(i => (i <= 0 ? mainSuggestions.length - 1 : i - 1));
+                        return;
+                      }
+                      if (e.key === 'Escape') {
+                        setShowMainSuggestions(false);
+                        setMainSuggestionIndex(-1);
+                      }
+                    }
+                  }}
+                  placeholder="What's on your mind? Start typing..."
+                  className={`w-full text-lg px-5 py-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all resize-none ${
+                    darkMode 
+                      ? 'bg-slate-800/50 border-2 border-slate-700 text-white placeholder-slate-400' 
+                      : 'bg-white border-2 border-slate-200 text-slate-800 placeholder-slate-400'
+                  }`}
+                  rows="3"
+                />
+                {showMainSuggestions && mainSuggestions.length > 0 && (
+                  <div className={`absolute left-0 right-0 top-full mt-1 z-50 rounded-xl shadow-xl border overflow-hidden ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                    <div className="py-1 text-sm">
+                      <div className={`px-3 py-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Suggestions from your notes</div>
+                      {mainSuggestions.map((word, i) => (
+                        <button
+                          key={word}
+                          type="button"
+                          onClick={() => applyMainSuggestion(word)}
+                          className={`w-full text-left px-4 py-2.5 flex items-center gap-2 transition-colors ${i === mainSuggestionIndex ? (darkMode ? 'bg-amber-900/40 text-amber-200' : 'bg-amber-100 text-amber-900') : (darkMode ? 'hover:bg-slate-700/50 text-slate-200' : 'hover:bg-slate-50 text-slate-800')}`}
+                        >
+                          <span>{word}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Tags and Date Row */}
+                <div className="mt-3 flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <Tag className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 z-10 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                    <input
+                      type="text"
+                      value={tagInput}
+                      spellCheck={true}
+                      autoComplete="off"
+                      autoCorrect="on"
+                      onChange={(e) => {
+                        setTagInput(e.target.value);
+                        updateTagSuggestions(e.target.value);
+                      }}
+                      onBlur={() => setTimeout(() => setShowTagSuggestions(false), 180)}
+                      onKeyDown={(e) => {
+                        if (showTagSuggestions && tagSuggestions.length > 0) {
+                          if (e.key === 'Tab' || e.key === 'Enter') {
+                            e.preventDefault();
+                            applyTagSuggestion(tagSuggestions[tagSuggestionIndex >= 0 ? tagSuggestionIndex : 0]);
+                            return;
+                          }
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setTagSuggestionIndex(i => (i < tagSuggestions.length - 1 ? i + 1 : 0));
+                            return;
+                          }
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setTagSuggestionIndex(i => (i <= 0 ? tagSuggestions.length - 1 : i - 1));
+                            return;
+                          }
+                          if (e.key === 'Escape') {
+                            setShowTagSuggestions(false);
+                            setTagSuggestionIndex(-1);
+                          }
+                        }
+                      }}
+                      placeholder="Add tags (comma separated)"
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all ${
+                        darkMode 
+                          ? 'bg-slate-800/50 border border-slate-700 text-white placeholder-slate-400' 
+                          : 'bg-white border border-slate-200 text-slate-800 placeholder-slate-400'
+                      }`}
+                    />
+                    {showTagSuggestions && tagSuggestions.length > 0 && (
+                      <div className={`absolute left-0 right-0 top-full mt-1 z-50 rounded-xl shadow-xl border overflow-hidden ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <div className="py-1 text-sm">
+                          <div className={`px-3 py-1.5 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Your tags</div>
+                          {tagSuggestions.map((tag, i) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => applyTagSuggestion(tag)}
+                              className={`w-full text-left px-4 py-2.5 pl-10 flex items-center gap-2 transition-colors ${i === tagSuggestionIndex ? (darkMode ? 'bg-amber-900/40 text-amber-200' : 'bg-amber-100 text-amber-900') : (darkMode ? 'hover:bg-slate-700/50 text-slate-200' : 'hover:bg-slate-50 text-slate-800')}`}
+                            >
+                              <Tag className="w-3.5 h-3.5 opacity-70" />
+                              <span>{tag}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowDatePicker(!showDatePicker)}
+                      className={`touch-target flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                        selectedDate
+                          ? darkMode
+                            ? 'bg-purple-900/50 text-purple-300 border border-purple-700'
+                            : 'bg-purple-100 text-purple-700 border border-purple-300'
+                          : darkMode
+                            ? 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:bg-slate-700/50'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Calendar className="w-4 h-4" />
+                      {selectedDate ? (typeof selectedDate === 'string' ? new Date(selectedDate + 'T12:00:00').toLocaleDateString() : new Date(selectedDate).toLocaleDateString()) : 'Set due date'}
+                      {selectedDate && (
+                        <X 
+                          className="w-4 h-4 cursor-pointer hover:text-red-500" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDate(null);
+                          }}
+                        />
+                      )}
+                    </button>
+                    
+                    {showDatePicker && (
+                      <div className={`absolute top-full mt-2 right-0 z-50 glass rounded-2xl p-4 shadow-2xl border ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                        <input
+                          type="date"
+                          value={selectedDate ? (typeof selectedDate === 'string' ? selectedDate : formatDateForInput(new Date(selectedDate))) : ''}
+                          onChange={(e) => {
+                            setSelectedDate(e.target.value || null);
+                            setShowDatePicker(false);
+                          }}
+                          className={`px-3 py-2 rounded-lg ${
+                            darkMode 
+                              ? 'bg-slate-800 border border-slate-700 text-white' 
+                              : 'bg-white border border-slate-200 text-slate-800'
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className={`text-xs mt-2 flex items-center justify-between ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span>💡 Ctrl+Enter for quick save</span>
+                  {input.length > 0 && (
+                    <span className="font-medium">{input.length} characters</span>
+                  )}
+                </div>
+                </div>
+
+              <div className="flex flex-wrap gap-3">
+                {Object.entries(categoryConfig).map(([key, config]) => {
+                  const Icon = config.icon;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setActiveCategory(key);
+                        addItem(key);
+                      }}
+                      className={`touch-target flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all transform hover:scale-105 active:scale-95 shadow-lg ${config.color} ${config.hoverColor} text-white`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      Save as {config.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className={`glass rounded-2xl p-5 mb-6 shadow-lg border ${darkMode ? 'border-slate-700' : 'border-white/50'}`}>
+              <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center mb-4">
+                <div className="flex-1 relative">
+                  <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-slate-400'}`} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    spellCheck={true}
+                    autoCorrect="on"
+                    placeholder="Search everything..."
+                    className={`w-full pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all ${
+                      darkMode 
+                        ? 'bg-slate-800/50 border-2 border-slate-700 text-white placeholder-slate-400' 
+                        : 'bg-white border-2 border-slate-200 text-slate-800 placeholder-slate-400'
+                    }`}
+                  />
+                </div>
+                
+                <div className="flex flex-wrap gap-2">
+                  {['all', 'idea', 'task', 'note', 'goal'].map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setFilter(f)}
+                      className={`touch-target px-4 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 ${
+                        filter === f
+                          ? darkMode 
+                            ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg' 
+                            : 'bg-gradient-to-r from-slate-800 to-slate-900 text-white shadow-lg'
+                          : darkMode
+                            ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={() => setShowArchived(!showArchived)}
+                    className={`touch-target px-4 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                      showArchived
+                        ? darkMode 
+                          ? 'bg-slate-700 text-white' 
+                          : 'bg-slate-700 text-white'
+                        : darkMode
+                          ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Archive className="w-4 h-4" />
+                    {showArchived ? 'Hide' : 'Show'} Archived
+                  </button>
+                  
+                  {items.length > 0 && (
+                    <button
+                      onClick={exportData}
+                      className={`touch-target px-4 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
+                        darkMode
+                          ? 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Download className="w-4 h-4" />
+                      Export
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Tag Filter Pills */}
+              {getAllTags().length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <span className={`text-xs font-semibold px-3 py-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Filter by tags:
+                  </span>
+                  {getAllTags().map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        if (selectedTags.includes(tag)) {
+                          setSelectedTags(selectedTags.filter(t => t !== tag));
+                        } else {
+                          setSelectedTags([...selectedTags, tag]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+                        selectedTags.includes(tag)
+                          ? darkMode
+                            ? 'bg-purple-900/50 text-purple-300 border border-purple-700'
+                            : 'bg-purple-100 text-purple-700 border border-purple-300'
+                          : darkMode
+                            ? 'bg-slate-800/30 text-slate-400 border border-slate-700 hover:bg-slate-700/50'
+                            : 'bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Tag className="w-3 h-3" />
+                      {tag}
+                    </button>
+                  ))}
+                  {selectedTags.length > 0 && (
+                    <button
+                      onClick={() => setSelectedTags([])}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        darkMode
+                          ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
+                          : 'bg-red-50 text-red-600 hover:bg-red-100'
+                      }`}
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Calendar View */}
+            {viewMode === 'calendar' && (
+              <div className={`glass rounded-2xl p-6 mb-6 shadow-lg border ${darkMode ? 'border-slate-700' : 'border-white/50'}`}>
+                <div className="flex items-center justify-between mb-6">
+                  <button
+                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                    className={`p-2 rounded-lg transition-all ${
+                      darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100'
+                    }`}
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  
+                  <h2 className={`heading-font text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-800'}`}>
+                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </h2>
+                  
+                  <button
+                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                    className={`p-2 rounded-lg transition-all ${
+                      darkMode ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100'
+                    }`}
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-7 gap-2">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    <div
+                      key={day}
+                      className={`text-center font-semibold text-sm py-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}
+                    >
+                      {day}
+                    </div>
+                  ))}
+                  
+                  {(() => {
+                    const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentMonth);
+                    const days = [];
+                    
+                    for (let i = 0; i < startingDayOfWeek; i++) {
+                      days.push(<div key={`empty-${i}`} className="aspect-square" />);
+                    }
+                    
+                    for (let day = 1; day <= daysInMonth; day++) {
+                      const date = new Date(year, month, day);
+                      const itemsForDay = getItemsForDate(date);
+                      const isToday = new Date().toDateString() === date.toDateString();
+                      
+                      days.push(
+                        <div
+                          key={day}
+                          className={`aspect-square p-2 rounded-xl transition-all cursor-pointer ${
+                            isToday
+                              ? darkMode
+                                ? 'bg-amber-900/30 border-2 border-amber-600'
+                                : 'bg-amber-100 border-2 border-amber-400'
+                              : darkMode
+                                ? 'bg-slate-800/30 hover:bg-slate-700/50'
+                                : 'bg-slate-50 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className={`text-sm font-semibold mb-1 ${
+                            isToday
+                              ? darkMode ? 'text-amber-400' : 'text-amber-700'
+                              : darkMode ? 'text-slate-300' : 'text-slate-700'
+                          }`}>
+                            {day}
+                          </div>
+                          
+                          {itemsForDay.length > 0 && (
+                            <div className="space-y-1">
+                              {itemsForDay.slice(0, 2).map(item => {
+                                const config = categoryConfig[item.category];
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`w-full h-1.5 rounded-full ${config.color}`}
+                                    title={item.text}
+                                  />
+                                );
+                              })}
+                              {itemsForDay.length > 2 && (
+                                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  +{itemsForDay.length - 2}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    
+                    return days;
+                  })()}
+                </div>
+                
+                <div className={`mt-6 pt-4 border-t ${darkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                  <div className="flex items-center gap-4 text-sm flex-wrap">
+                    <span className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                      Legend:
+                    </span>
+                    {Object.entries(categoryConfig).map(([key, config]) => (
+                      <div key={key} className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded ${config.color}`} />
+                        <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                          {config.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Items List */}
+            {viewMode === 'list' && (
+              <div className="space-y-3">
+                {filteredItems.length === 0 ? (
+                  <div className={`text-center py-20 glass rounded-3xl border-2 border-dashed shadow-lg ${darkMode ? 'border-slate-700' : 'border-slate-300'}`}>
+                    <div className="text-7xl mb-6 pulse-glow">
+                      {items.length === 0 ? (showArchived ? '📦' : '💭') : '🔍'}
+                    </div>
+                    <p className={`text-xl font-semibold mb-2 ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                      {items.length === 0
+                        ? (showArchived ? 'No archived items' : 'Your mind is clear')
+                        : 'No items match your filters'}
+                    </p>
+                    <p className={`${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      {items.length === 0
+                        ? (showArchived ? 'Archive items to see them here' : 'Start capturing brilliant thoughts above!')
+                        : 'Try adjusting your search or filter to see more items.'}
+                    </p>
+                  </div>
+                ) : (
+                  filteredItems.map((item, index) => {
+                    const config = categoryConfig[item.category];
+                    const Icon = config.icon;
+                    const timeAgo = getTimeAgo(item.timestamp);
+                    const priorityInfo = priorityConfig[item.priority || 'normal'];
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`glass rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 item-enter border ${
+                          darkMode ? 'border-slate-700' : 'border-white/50'
+                        } ${item.completed ? 'opacity-60' : ''}`}
+                        style={{ animationDelay: `${index * 0.03}s` }}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`${config.color} p-3 rounded-xl flex-shrink-0 shadow-md`}>
+                            <Icon className="w-5 h-5 text-white" />
+                          </div>
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-lg font-medium mb-2 ${
+                              item.completed 
+                                ? darkMode ? 'line-through text-slate-500' : 'line-through text-slate-400'
+                                : darkMode ? 'text-white' : 'text-slate-800'
+                            }`}>
+                              {item.text}
+                            </div>
+                            
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {item.tags.map((tag, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                                      darkMode
+                                        ? 'bg-purple-900/30 text-purple-300 border border-purple-700/50'
+                                        : 'bg-purple-50 text-purple-700 border border-purple-200'
+                                    }`}
+                                  >
+                                    <Tag className="w-3 h-3" />
+                                    {tag}
+                                    <button
+                                      onClick={() => removeTagFromItem(item.id, tag)}
+                                      className="p-1 -m-1 rounded hover:bg-red-500/20 hover:text-red-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                                      aria-label={`Remove tag ${tag}`}
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            
+                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                              <span className={`px-3 py-1 rounded-lg font-semibold ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
+                                {config.label}
+                              </span>
+                              
+                              {item.category === 'task' && (
+                                <div className="flex gap-1">
+                                  {['high', 'normal', 'low'].map((p) => (
+                                    <button
+                                      key={p}
+                                      onClick={() => setPriority(item.id, p)}
+                                      className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                        item.priority === p || (!item.priority && p === 'normal')
+                                          ? priorityInfo.bg + ' ' + priorityInfo.color
+                                          : darkMode
+                                            ? 'bg-slate-800/30 text-slate-500 hover:bg-slate-800/50'
+                                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                      }`}
+                                    >
+                                      {p === 'high' && '🔥'}
+                                      {p === 'normal' && '→'}
+                                      {p === 'low' && '↓'}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {item.dueDate && (
+                                <span className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${
+                                  darkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-50 text-purple-700'
+                                }`}>
+                                  <Calendar className="w-3 h-3" />
+                                  {typeof item.dueDate === 'string' && item.dueDate.length >= 10
+                                    ? new Date(item.dueDate.slice(0, 10) + 'T12:00:00').toLocaleDateString()
+                                    : new Date(item.dueDate).toLocaleDateString()}
+                                </span>
+                              )}
+                              
+                              <span className={`${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {timeAgo}
+                              </span>
+                              
+                              {collaborationMode && item.createdBy && (
+                                <span className={`flex items-center gap-1 text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                  <Users className="w-3 h-3" />
+                                  {item.createdBy}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {item.category === 'task' && !item.archived && (
+                              <button
+                                onClick={() => toggleComplete(item.id)}
+                                className={`touch-target p-2.5 rounded-xl transition-all transform hover:scale-110 active:scale-95 shadow-md ${
+                                  item.completed
+                                    ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white'
+                                    : darkMode
+                                      ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                                      : 'bg-slate-100 text-slate-400 hover:bg-emerald-100 hover:text-emerald-600'
+                                }`}
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                            )}
+                            
+<button
+                            onClick={() => toggleArchive(item.id)}
+                            className={`touch-target p-2.5 rounded-xl transition-all transform hover:scale-110 active:scale-95 shadow-md ${
+                              darkMode
+                                ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                                : 'bg-slate-100 text-slate-400 hover:bg-slate-700 hover:text-white'
+                            }`}
+                            aria-label={item.archived ? 'Unarchive' : 'Archive'}
+                            >
+                              <Archive className="w-5 h-5" />
+                            </button>
+                            
+<button
+                            onClick={() => deleteItem(item.id)}
+                            className={`touch-target p-2.5 rounded-xl transition-all transform hover:scale-110 active:scale-95 shadow-md ${
+                              darkMode
+                                ? 'bg-slate-800/50 text-slate-400 hover:bg-red-900/50 hover:text-red-400'
+                                : 'bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-600'
+                            }`}
+                            aria-label="Delete"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            {/* Footer */}
+            {viewMode === 'list' && !showArchived && (
+              <div className={`mt-8 text-center ${darkMode ? 'text-slate-400' : 'text-slate-500'} text-sm space-y-2`}>
+                {items.length > 0 && (
+                  <>
+                    <div>✨ Everything syncs automatically • Built with love</div>
+                    {collaborationMode && (
+                      <div className="text-purple-500 font-semibold">
+                        🤝 Team Mode Active - Data stored in browser localStorage
+                      </div>
+                    )}
+                  </>
+                )}
+                <div className="flex flex-wrap justify-center items-center gap-3">
+                  {notificationPermission === 'granted' && notificationsEnabled ? (
+                    <button
+                      type="button"
+                      onClick={disableNotifications}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${darkMode ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+                    >
+                      <Bell className="w-4 h-4 text-violet-500" />
+                      Notifications on
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={enableNotifications}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${darkMode ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+                    >
+                      <Bell className="w-4 h-4" />
+                      {notificationPermission === 'denied' ? 'Notifications blocked' : 'Enable notifications'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          </div>
+      );
+    }
+
+    ReactDOM.render(<BrainDumpApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "appId": "com.braindump.app",
+  "appName": "Brain Dump",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
