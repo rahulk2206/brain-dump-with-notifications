@@ -115,18 +115,27 @@ These keys let the server send push notifications securely.
 
 ---
 
-## Step 6 – Turn on the cron job (so reminders are sent)
+## Step 6 – Turn on the reminder job (free; runs every 15 minutes)
 
-The app uses a small “cron” job that runs every 15 minutes and sends due-date reminders.
+The app needs something to call your `/api/cron` URL every 15 minutes so due-date reminders get sent. On the **free Vercel plan**, built-in cron can only run once per day, so we use a **free external cron service** instead.
 
-1. In Vercel, go to **Settings** → **Cron Jobs** (or **Functions** → Cron).
-2. If you see a cron for **/api/cron** (from `vercel.json`), it’s already there. If not, add a new cron:
-   - **Path:** `/api/cron`
-   - **Schedule:** `*/15 * * * *` (every 15 minutes)
+1. Go to [cron-job.org](https://cron-job.org) and create a **free account** (Sign up with email or Google).
+2. After login, click **Create cronjob**.
+3. Fill in:
+   - **Title:** e.g. `Brain Dump reminders`
+   - **Address (URL):** your Vercel app URL + `/api/cron`, e.g.  
+     `https://brain-dump-xxxx.vercel.app/api/cron`  
+     (Replace with your real Vercel URL.)
+   - **Schedule:** choose **Every 15 minutes** (or “Every 15 min”).
+   - **Request method:** **GET** (or leave default).
+4. Add the secret so only this job can trigger your API:
+   - Find **Request headers** or **Advanced** and add a header:
+     - **Name:** `Authorization`
+     - **Value:** `Bearer YOUR_CRON_SECRET`  
+       (Replace `YOUR_CRON_SECRET` with the same value you set as `CRON_SECRET` in Vercel in Step 5.)
+5. Save the cron job (e.g. **Create cronjob** or **Save**).
 
-3. Set the **CRON_SECRET** in Environment Variables (you did this in Step 5). Vercel will use it when calling your cron so only Vercel can trigger it.
-
-After redeploy, the cron will run automatically. You don’t need to do anything else for it.
+The service will call your API every 15 minutes. Reminders will be sent within about 15 minutes of 9 AM on the due date.
 
 ---
 
@@ -174,7 +183,7 @@ After redeploy, the cron will run automatically. You don’t need to do anything
 | 3    | Imported it on Vercel and got a live URL. |
 | 4    | Created a KV database and linked it to the project. |
 | 5    | Generated VAPID keys and set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `CRON_SECRET` in Vercel. |
-| 6    | Confirmed the cron for `/api/cron` is enabled. |
+| 6    | Set up a free cron at cron-job.org to call `/api/cron` every 15 minutes with your `CRON_SECRET`. |
 | 7    | Opened the URL on iPhone → Add to Home Screen → Enable notifications → add tasks with due dates. |
 
 You now have Brain Dump hosted with a backend and push notifications, with no monthly cost and no server to manage.

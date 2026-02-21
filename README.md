@@ -40,24 +40,3 @@ To use the app from anywhere **and** get push notifications on your iPhone (e.g.
 ## Deploying online (static only, optional)
 
 To use it from anywhere without the backend, upload this folder to any static host (e.g. GitHub Pages, Netlify) over HTTPS. Then open that URL on your iPhone in Safari and use **Add to Home Screen**. Notifications will only work when you open the app (“due today” reminder).
-
----
-
-## Publish on App Store & Google Play
-
-This project is set up with **Capacitor** so you can build native iOS and Android apps and publish them on the **Apple App Store** and **Google Play Store**.
-
-**👉 See [PUBLISHING_GUIDE.md](PUBLISHING_GUIDE.md) for full step-by-step instructions** (developer accounts, Xcode, Android Studio, signing, store listings, and submission).
-
-**Quick start for native builds:**
-
-```bash
-npm install
-npx cap add ios
-npx cap add android
-npx cap sync
-npx cap open ios      # build & submit from Xcode
-npx cap open android  # build & submit from Android Studio
-```
-
-The app that gets packaged is in the **`www`** folder. After changing `www/index.html` or other files, run `npx cap sync` before building again.
